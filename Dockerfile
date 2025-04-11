@@ -1,28 +1,29 @@
 # Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04
 
-# Set environment variables to avoid interactive prompts during installation
+# Set environment variables to avoid prompts and improve Python behavior
 ENV DEBIAN_FRONTEND=noninteractive
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-# Update package lists and install Python and pip
+# Install Python, pip, and system dependencies
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip && \
+    apt-get install -y python3 python3-pip python3-venv build-essential && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy the requirements file and install Python dependencies
+# Copy requirements.txt and install dependencies
 COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code
 COPY . .
 
-# Expose port 8000 for the application
+# Expose port 8000 for the Flask app
 EXPOSE 8000
 
-# Command to run the Python application
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+# Start the app using Gunicorn
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "main:app"]
